@@ -9,7 +9,7 @@
 # 
 # El objetivo es encontrar la forma óptima de transporte desde los depósitos a los locales, cumpliendo las restricciones de stock y demanda. Se entiende por óptima a la forma que menor costo asociado tenga.
 
-# In[2]:
+# In[1]:
 
 
 import random
@@ -23,7 +23,7 @@ from itertools import product
 # 
 # También calculamos las combinaciones posibles entre locales y los costos entre ellas.
 
-# In[1]:
+# In[2]:
 
 
 class datos():
@@ -62,7 +62,7 @@ class datos():
             self.costos.append(c)
 
 
-# In[4]:
+# In[3]:
 
 
 f = datos(5,5)
@@ -98,17 +98,19 @@ print("Costos por producto y por combinación", f.costos)
 #     4 <= x3 <= 6
 
 # #### 3. Implementar el modelo utilizando Google OR-Tools.
+# 
+# Aca hay data de como hacerlo con arrays: https://developers.google.com/optimization/mip/mip_var_array
 
-# In[8]:
+# In[4]:
 
 
 from ortools.linear_solver import pywraplp
 
 
-# In[9]:
+# In[5]:
 
 
-#En primer lugar hago un ejemplo a mano
+#En primer lugar hago un ejemplo a mano, con 1 deposito y 1 local
 
 def main():
     # Create the linear solver with the GLOP backend.
@@ -155,9 +157,7 @@ if __name__ == '__main__':
     main()
 
 
-# Ahora hago un ejemplo con todos
-
-# In[97]:
+# In[6]:
 
 
 f = datos(5,5)
@@ -167,13 +167,56 @@ print("Combinaciones posibles entre depósitos y locales", f.combinaciones)
 print("Costos por producto y por combinación", f.costos)
 
 
-# In[99]:
+# In[8]:
 
 
-f.demanda
+resultados = []
+# Create the linear solver with the GLOP backend.
+solver = pywraplp.Solver.CreateSolver('GLOP')
+
+# Create the variables x and y.
+x = {}
+for j in range(3):
+    x[j] = solver.IntVar(0, 200, 'x[%i]' % j)
+print('Number of variables =', solver.NumVariables())
+    
+# Create the linear constraints, stock
+for p in range(3):
+    for i in range(5):
+        constraint = solver.RowConstraint(0, float(f.stock[i][p]), 'ct')
+        constraint.SetCoefficient(x[j], 1)
+print('Number of constraints =', solver.NumConstraints())
+
+#objective = solver.Objective()
+#for j in range(3):
+#    for i in range(5):
+#        objective.SetCoefficient(x[j], float(f.costos[][j]))
+#objective.SetMinimization()
+
+#solver.Solve()
+        
+        
+#print('Solution:')
+#print('Objective value =', objective.Value())
+#print('x1 =', x1.solution_value())
+#print('x2 =', x2.solution_value())
+#print('x3 =', x3.solution_value())
+#r = [x1.solution_value(), x2.solution_value(), x3.solution_value(), objective.Value()]
 
 
-# In[109]:
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
 
 
 matriz = np.empty((4,3))
@@ -188,86 +231,4 @@ for prod in range(3):
 #    matriz.append(list(i))
 #    matriz.append(f.stock[i[0]-1])
 #    matriz.append(f.demanda[i[1]-1])
-
-
-# In[14]:
-
-
-print("Total de combinaciones posibles: ", len(f.combinaciones))
-
-resultados = []
-t=0
-#Optimize all the combinations and scenarios
-for a in f.combinaciones:
-    t = t + 1
-    # Create the linear solver with the GLOP backend.
-    solver = pywraplp.Solver.CreateSolver('GLOP')
-
-    # Create the variables x and y.
-    x1 = solver.NumVar(0, 10, 'x1')
-    x2 = solver.NumVar(0, 10, 'x2')
-    x3 = solver.NumVar(0, 10, 'x3')
-    
-    # Create the linear constraints, a <= x1 <= b
-    ct = solver.Constraint(float(f.demanda[a[1]-1][0]),float(f.stock[a[0]-1][0]), 'ct')
-    ct.SetCoefficient(x1, 1)
-    
-    # Create the linear constraints, a <= x2 <= b
-    ct = solver.Constraint(float(f.demanda[a[1]-1][1]), float(f.stock[a[0]-1][1]), 'ct')
-    ct.SetCoefficient(x2, 1)
-   
-    # Create the linear constraints, a <= x3 <= b
-    ct = solver.Constraint(float(f.demanda[a[1]-1][2]), float(f.stock[a[0]-1][2]), 'ct')
-    ct.SetCoefficient(x3, 1)
-    
-    # Create the linear constraints, a <= x1 <= b
-    ct = solver.Constraint(float(f.demanda[a[1]-1][0]),float(f.stock[a[0]-1][0]), 'ct')
-    ct.SetCoefficient(x1, 1)
-    
-    # Create the linear constraints, a <= x2 <= b
-    ct = solver.Constraint(float(f.demanda[a[1]-1][1]), float(f.stock[a[0]-1][1]), 'ct')
-    ct.SetCoefficient(x2, 1)
-   
-    # Create the linear constraints, a <= x3 <= b
-    ct = solver.Constraint(float(f.demanda[a[1]-1][2]), float(f.stock[a[0]-1][2]), 'ct')
-    ct.SetCoefficient(x3, 1)
-        
-    print('Number of constraints =', solver.NumConstraints())
-    
-    # Create the objective function: cx1 + dx2 + ex3
-    objective = solver.Objective()
-    objective.SetCoefficient(x1, float(f.costos[t-1][0]))
-    objective.SetCoefficient(x2, float(f.costos[t-1][1]))
-    objective.SetCoefficient(x3, float(f.costos[t-1][2]))
-    objective.SetMinimization()
-    
-    solver.Solve()
-        
-        
-    print('Solution:')
-    print('Objective value =', objective.Value())
-    print('x1 =', x1.solution_value())
-    print('x2 =', x2.solution_value())
-    print('x3 =', x3.solution_value())
-    r = [x1.solution_value(), x2.solution_value(), x3.solution_value(), objective.Value()]
-    resultados.append(r)
-
-
-# In[24]:
-
-
-#Me quedo con la combinacion que minimiza el costo, es decir la anteultima
-np.where((result[3]==np.min(result[3])))
-
-
-# In[25]:
-
-
-np.min(result[3])
-
-
-# In[ ]:
-
-
-
 
