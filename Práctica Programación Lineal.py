@@ -100,6 +100,8 @@ print("Costos por producto y por combinación", f.costos)
 # #### 3. Implementar el modelo utilizando Google OR-Tools.
 # 
 # Aca hay data de como hacerlo con arrays: https://developers.google.com/optimization/mip/mip_var_array
+# 
+# Este post lo hace sonar MUY facil: https://towardsdatascience.com/operations-research-in-r-transportation-problem-1df59961b2ad
 
 # In[4]:
 
@@ -167,7 +169,7 @@ print("Combinaciones posibles entre depósitos y locales", f.combinaciones)
 print("Costos por producto y por combinación", f.costos)
 
 
-# In[8]:
+# In[17]:
 
 
 resultados = []
@@ -177,58 +179,56 @@ solver = pywraplp.Solver.CreateSolver('GLOP')
 # Create the variables x and y.
 x = {}
 for j in range(3):
-    x[j] = solver.IntVar(0, 200, 'x[%i]' % j)
+    x[j] = solver.IntVar(0, 200, 'x[%i]' % j)  #Here I am already including the non-negativity constraint: x must be greater than 0
 print('Number of variables =', solver.NumVariables())
     
-# Create the linear constraints, stock
+# Create the linear constraints, stock: menor o igual
 for p in range(3):
     for i in range(5):
         constraint = solver.RowConstraint(0, float(f.stock[i][p]), 'ct')
         constraint.SetCoefficient(x[j], 1)
+
+# Create the linear constraints, demanda: igual
+for p in range(3):
+    for i in range(5):
+        constraint = solver.RowConstraint(float(f.demanda[i][p]), float(f.demanda[i][p]), 'ct')
+        constraint.SetCoefficient(x[j], 1)
 print('Number of constraints =', solver.NumConstraints())
 
-#objective = solver.Objective()
-#for j in range(3):
-#    for i in range(5):
-#        objective.SetCoefficient(x[j], float(f.costos[][j]))
-#objective.SetMinimization()
 
-#solver.Solve()
+objective = solver.Objective()
+for i in range(len(f.costos)):
+    for p in range(3):
+        objective.SetCoefficient(x[p], float(f.costos[i][p]))
+objective.SetMinimization()
+solver.Solve()
+status = solver.Solve() 
         
-        
-#print('Solution:')
-#print('Objective value =', objective.Value())
-#print('x1 =', x1.solution_value())
-#print('x2 =', x2.solution_value())
-#print('x3 =', x3.solution_value())
+print('Solution:')
+print('Objective value =', objective.Value())
+
+for p in range(3):
+    print('x1 =', x[j].solution_value())
 #r = [x1.solution_value(), x2.solution_value(), x3.solution_value(), objective.Value()]
 
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
+# Check that the problem has an optimal solution.
+if status != solver.OPTIMAL:
+    print('The problem does not have an optimal solution!')
+    if status == solver.FEASIBLE:
+        print('A potentially suboptimal solution was found.')
+    else:
+        print('The solver could not solve the problem.')
+        exit(1)
 
 
 # In[ ]:
 
 
-matriz = np.empty((4,3))
 
-for prod in range(3):
-    demanda = []
-    for local in range(4):
-        #print(f.demanda[local][prod])
-        demanda.append(f.demanda[local][prod])
-    print(demanda)
-#for i in np.array(f.combinaciones):
-#    matriz.append(list(i))
-#    matriz.append(f.stock[i[0]-1])
-#    matriz.append(f.demanda[i[1]-1])
+
+
+# In[ ]:
+
+
+
 
