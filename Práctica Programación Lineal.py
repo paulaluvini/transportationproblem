@@ -23,7 +23,7 @@ from itertools import product
 # 
 # También calculamos las combinaciones posibles entre locales y los costos entre ellas.
 
-# In[2]:
+# In[37]:
 
 
 class datos():
@@ -47,7 +47,7 @@ class datos():
         for l in range(0,nro_loc):
             d = []
             for product in range(0,3):
-                d.append(random.choice(np.arange(1,200)))
+                d.append(random.choice(np.arange(1,100)))  ##LO DEJO ASI PARA POR AHORA NO TENER PROBLEMAS DE MAS DEMNADA
             self.demanda.append(d)
         
         from itertools import product
@@ -62,7 +62,7 @@ class datos():
             self.costos.append(c)
 
 
-# In[3]:
+# In[38]:
 
 
 f = datos(5,5)
@@ -159,17 +159,23 @@ if __name__ == '__main__':
     main()
 
 
-# In[6]:
+# In[40]:
 
 
-f = datos(5,5)
+f = datos(1,1)
 print("Demanda por local: ", f.demanda)
 print("Stock por depósito: ", f.stock)
 print("Combinaciones posibles entre depósitos y locales", f.combinaciones)
 print("Costos por producto y por combinación", f.costos)
 
 
-# In[17]:
+# In[53]:
+
+
+f.demanda[0][1]
+
+
+# In[54]:
 
 
 resultados = []
@@ -181,21 +187,20 @@ x = {}
 for j in range(3):
     x[j] = solver.IntVar(0, 200, 'x[%i]' % j)  #Here I am already including the non-negativity constraint: x must be greater than 0
 print('Number of variables =', solver.NumVariables())
-    
-# Create the linear constraints, stock: menor o igual
-for p in range(3):
-    for i in range(5):
-        constraint = solver.RowConstraint(0, float(f.stock[i][p]), 'ct')
-        constraint.SetCoefficient(x[j], 1)
 
-# Create the linear constraints, demanda: igual
-for p in range(3):
-    for i in range(5):
-        constraint = solver.RowConstraint(float(f.demanda[i][p]), float(f.demanda[i][p]), 'ct')
-        constraint.SetCoefficient(x[j], 1)
+# ALGO PASAAAA: ME TOMA SOLO LA ULTIMA CONSTRAINT Y ENTONCES ASIGNA EL MISMO VALOR PARA LOS 3 PRODUCTOS (EL DE LA DEMANDA DEL X3)
+# ES CLARAMENTE UN TEMA DEL LOOP QUE ESTA MAL PERO NO SE QUE ES
+# Create the linear constraints, stock: menor o igual. demanda mayor o igual
+
+for i in range(1): # ACA HAGO UN LOOP SOBRE LOS LOCALES Y DEPOSITOS, ACA SON IGUAL CANTIDAD
+    for p in range(3): #AHORA UN LOOP SOBRE PRODUCTOS
+        constraint = solver.RowConstraint(float(f.demanda[i][p]), float(f.stock[i][p]), 'ct')
+        constraint.SetCoefficient(x[p], 1)
+
 print('Number of constraints =', solver.NumConstraints())
 
-
+# ESTO ESTA MAAAAL
+# EN REALIDAD TENGO QUE PLANTEAR LA AMTRIZ DE COSTOS
 objective = solver.Objective()
 for i in range(len(f.costos)):
     for p in range(3):
@@ -219,12 +224,6 @@ if status != solver.OPTIMAL:
     else:
         print('The solver could not solve the problem.')
         exit(1)
-
-
-# In[ ]:
-
-
-
 
 
 # In[ ]:
